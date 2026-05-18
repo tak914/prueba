@@ -3,16 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AirDrop Local - PeerShare</title>
-    <!-- Incluimos la librería PeerJS para la conexión P2P -->
+    <title>AstraDrop // P2P Image Sync</title>
+    <!-- Librería PeerJS para la conexión directa -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <!-- Lucide Icons para iconos vectoriales limpios -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --bg-gradient: linear-gradient(135deg, #0f172a, #1e1b4b, #2e1065);
-            --glass-bg: rgba(255, 255, 255, 0.07);
-            --glass-border: rgba(255, 255, 255, 0.12);
-            --glow-color: #a855f7;
-            --text-main: #f8fafc;
+            --bg-main: #0b0d19;
+            --glass-bg: rgba(15, 18, 36, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-highlight: rgba(255, 255, 255, 0.03);
+            
+            --cyan-glow: rgba(6, 182, 212, 0.15);
+            --purple-glow: rgba(168, 85, 247, 0.15);
+            
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-cyan: #22d3ee;
+            --text-purple: #c084fc;
         }
 
         * {
@@ -20,246 +29,449 @@
             margin: 0;
             padding: 0;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
         }
 
         body {
-            background: var(--bg-gradient);
+            background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+                        radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.15) 0%, transparent 40%),
+                        var(--bg-main);
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: var(--text-main);
+            color: var(--text-primary);
+            padding: 24px;
+            position: relative;
             overflow-x: hidden;
-            padding: 20px;
         }
 
-        .container {
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            padding: 30px;
-            width: 100%;
-            max-width: 450px;
-            text-align: center;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        /* Fondo decorativo de red futurista sutil */
+        body::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 24px 24px;
+            pointer-events: none;
+            z-index: 0;
         }
 
-        h1 {
-            font-size: 1.8rem;
-            margin-bottom: 20px;
-            background: linear-gradient(to right, #38bdf8, #a855f7);
+        .main-title {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 32px;
+            background: linear-gradient(135deg, #22d3ee 0%, #a855f7 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            text-shadow: 0 4px 20px rgba(34, 211, 238, 0.2);
+            z-index: 1;
+            text-align: center;
         }
 
-        .section {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 16px;
-            padding: 20px;
+        .dashboard {
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+            border-radius: 32px;
+            width: 100%;
+            max-width: 900px;
+            min-height: 480px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        /* Panel Izquierdo: Estado local y códigos */
+        .panel-left {
+            padding: 40px;
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(180deg, transparent, rgba(6, 182, 212, 0.02));
+        }
+
+        /* Panel Derecho: Inputs y controles */
+        .panel-right {
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: linear-gradient(180deg, transparent, rgba(168, 85, 247, 0.02));
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-secondary);
             margin-bottom: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .code-display {
-            font-size: 2rem;
-            font-weight: bold;
-            letter-spacing: 4px;
-            color: #38bdf8;
-            margin: 10px 0;
-            text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        /* Esfera de código estilo Sci-Fi */
+        .code-orb {
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.05), transparent), var(--glass-highlight);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 40px var(--cyan-glow), inset 0 0 20px rgba(6, 182, 212, 0.1);
+            position: relative;
+            transition: all 0.5s ease;
+        }
+
+        .code-orb::before {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            border: 1px dashed rgba(6, 182, 212, 0.3);
+            animation: rotateOrb 20s linear infinite;
+        }
+
+        @keyframes rotateOrb { 100% { transform: rotate(360deg); } }
+
+        .code-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .code-number {
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: var(--text-cyan);
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(34, 211, 238, 0.6);
+            margin: 5px 0;
+        }
+
+        /* Inputs Premium */
+        .input-wrapper {
+            position: relative;
+            margin-bottom: 16px;
         }
 
         input[type="text"] {
             width: 100%;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.05);
+            padding: 16px 20px;
+            background: rgba(0, 0, 0, 0.2);
             border: 1px solid var(--glass-border);
-            border-radius: 12px;
+            border-radius: 16px;
             color: white;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            letter-spacing: 4px;
             text-align: center;
             outline: none;
-            transition: all 0.3s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         input[type="text"]:focus {
-            border-color: var(--glow-color);
-            box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+            border-color: #a855f7;
+            box-shadow: 0 0 25px var(--purple-glow);
+            background: rgba(0, 0, 0, 0.4);
         }
 
+        /* Botón con gradiente animado */
         button {
             width: 100%;
-            padding: 12px;
-            margin-top: 12px;
-            background: linear-gradient(135deg, #a855f7, #6366f1);
+            padding: 16px;
+            background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
             border: none;
-            border-radius: 12px;
+            border-radius: 16px;
             color: white;
             font-size: 1rem;
-            font-weight: bold;
+            font-weight: 700;
+            letter-spacing: 0.5px;
             cursor: pointer;
-            transition: transform 0.2s, opacity 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 8px 20px rgba(168, 85, 247, 0.25);
+            transition: all 0.3s;
         }
 
-        button:active {
-            transform: scale(0.98);
+        button:hover {
+            opacity: 0.95;
+            box-shadow: 0 8px 25px rgba(168, 85, 247, 0.4);
+            transform: translateY(-1px);
         }
 
-        .file-zone {
-            border: 2px dashed rgba(255, 255, 255, 0.2);
-            padding: 30px 20px;
+        button:active { transform: translateY(1px); }
+
+        /* Zona de carga Dropzone */
+        .dropzone {
+            border: 2px dashed rgba(255, 255, 255, 0.15);
+            padding: 40px 20px;
+            border-radius: 20px;
+            text-align: center;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.01);
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .dropzone:hover {
+            border-color: var(--text-cyan);
+            background: rgba(6, 182, 212, 0.02);
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.05);
+        }
+
+        .dropzone p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        #fileInput { display: none; }
+
+        /* Preview Dinámico */
+        .preview-box {
+            margin-top: 20px;
             border-radius: 16px;
-            cursor: pointer;
-            background: rgba(255, 255, 255, 0.02);
-            transition: background 0.3s;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+            position: relative;
+            background: rgba(0,0,0,0.3);
         }
 
-        .file-zone:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: #38bdf8;
+        .preview-box img {
+            width: 100%;
+            height: auto;
+            display: block;
+            max-height: 250px;
+            object-fit: contain;
+            padding: 10px;
         }
 
-        #fileInput {
-            display: none;
+        .status-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
 
-        .status {
-            font-size: 0.9rem;
-            color: #94a3b8;
-            margin-top: 10px;
+        .pulse-icon {
+            width: 8px;
+            height: 8px;
+            background-color: #22d3ee;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #22d3ee;
+            animation: pulse 2s infinite;
         }
 
-        #preview img {
-            max-width: 100%;
-            border-radius: 12px;
-            margin-top: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(34, 211, 238, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); }
         }
 
-        .hidden { display: none; }
+        .hidden { display: none !important; }
+
+        /* Ajustes Responsivos para celulares */
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+                border-radius: 24px;
+            }
+            .panel-left {
+                border-right: none;
+                border-bottom: 1px solid var(--glass-border);
+                padding: 30px 20px;
+            }
+            .panel-right {
+                padding: 30px 20px;
+            }
+            .code-orb {
+                width: 180px;
+                height: 180px;
+            }
+            .code-number { font-size: 2.8rem; }
+        }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>P2P Image Transfer</h1>
+    <h1 class="main-title">AstraDrop</h1>
 
-        <!-- SECCIÓN 1: Tu código (Para cuando la PC espera conexión) -->
-        <div id="localCodeSection" class="section">
-            <p>El código de este dispositivo es:</p>
-            <div id="my-id" class="code-display">...</div>
-            <p class="status">Esperando que el otro dispositivo se conecte...</p>
-        </div>
-
-        <p style="margin-bottom: 20px; color: #64748b;">— O —</p>
-
-        <!-- SECCIÓN 2: Conectarse a otro dispositivo (Para el Celular) -->
-        <div id="connectSection" class="section">
-            <p style="margin-bottom: 10px;">Introduce el código del otro dispositivo:</p>
-            <input type="text" id="peer-id-input" placeholder="Ej: 1234" maxlength="4">
-            <button id="connect-btn">Conectar Dispositivos</button>
-        </div>
-
-        <!-- SECCIÓN 3: Envío y Recepción (Se activa al conectar) -->
-        <div id="transferSection" class="section hidden">
-            <div id="connection-status" style="color: #4ade80; font-weight: bold; margin-bottom: 15px;">
-                ¡Conectado exitosamente!
+    <div class="dashboard">
+        
+        <!-- PANEL IZQUIERDO: ESTADO / CÓDIGO LOCAL -->
+        <div class="panel-left">
+            <div class="section-title">
+                <i data-lucide="radio"></i> Dispositivo Local
             </div>
             
-            <div class="file-zone" onclick="document.getElementById('fileInput').click()">
-                <p>📸 Toca aquí para seleccionar o tomar una foto</p>
-                <input type="file" id="fileInput" accept="image/*">
+            <div class="code-orb" id="orb-element">
+                <span class="code-label">Tu Código</span>
+                <div class="code-number" id="my-id">••••</div>
             </div>
 
-            <div id="preview"></div>
+            <div class="status-text" id="pulse-status">
+                <span class="pulse-icon"></span>
+                <span id="status-string">Generando par cifrado...</span>
+            </div>
+        </div>
+
+        <!-- PANEL DERECHO: CONEXIÓN Y OPERACIONES -->
+        <div class="panel-right">
+            
+            <!-- Modo Espera: Conectar dispositivo remoto -->
+            <div id="setup-zone">
+                <div class="section-title">
+                    <i data-lucide="smartphone-converting"></i> Vincular Dispositivos
+                </div>
+                <div class="input-wrapper">
+                    <input type="text" id="peer-id-input" placeholder="0000" maxlength="4" autocomplete="off">
+                </div>
+                <button id="connect-btn">
+                    <i data-lucide="link"></i> Conectar e Intercambiar
+                </button>
+            </div>
+
+            <!-- Modo Activo: Transferencia de Archivos -->
+            <div id="transfer-zone" class="hidden">
+                <div class="section-title" style="color: #4ade80;">
+                    <i data-lucide="check-circle-2"></i> Canal Sincronizado
+                </div>
+                
+                <div class="dropzone" onclick="document.getElementById('fileInput').click()">
+                    <i data-lucide="image-plus" style="width: 36px; height: 36px; color: var(--text-cyan);"></i>
+                    <p>Arrastra imágenes aquí o haz clic para buscar</p>
+                    <input type="file" id="fileInput" accept="image/*">
+                </div>
+
+                <div id="preview-container" class="hidden">
+                    <div class="preview-box" id="preview"></div>
+                </div>
+            </div>
+
         </div>
     </div>
 
     <script>
-        // Generamos un código corto de 4 dígitos para que sea fácil de tipear
+        // Inicializar iconos de Lucide
+        lucide.createIcons();
+
+        // Generar un código de enlace de 4 dígitos aleatorio
         const shortId = Math.floor(1000 + Math.random() * 9000).toString();
         
-        // Inicializamos PeerJS usando los servidores públicos gratuitos
-        const peer = new Peer(shortId, {
-            debug: 1
-        });
-
+        const peer = new Peer(shortId, { debug: 1 });
         let conn = null;
 
-        // Mostrar el ID generado en la pantalla
+        // Al abrir la conexión PeerJS
         peer.on('open', (id) => {
             document.getElementById('my-id').innerText = id;
+            document.getElementById('status-string').innerText = "Esperando enlace entrante...";
         });
 
-        // --- CASO A: Este dispositivo RECIBE la conexión (ej. la PC) ---
+        // Escucha si otro dispositivo introduce nuestro código (Caso PC / Receptor)
         peer.on('connection', (connection) => {
             conn = connection;
-            setupConnectionHandlers();
+            initTransferUI();
         });
 
-        // --- CASO B: Este dispositivo INICIA la conexión (ej. el Celular) ---
+        // Ejecutar conexión manual al hacer click (Caso Celular / Emisor)
         document.getElementById('connect-btn').addEventListener('click', () => {
             const remoteId = document.getElementById('peer-id-input').value.trim();
             if (remoteId) {
                 conn = peer.connect(remoteId);
-                setupConnectionHandlers();
-            } else {
-                alert("Por favor, ingresa un código válido.");
+                initTransferUI();
             }
         });
 
-        // Manejo de la transferencia de datos una vez conectados
-        function setupConnectionHandlers() {
-            // Cambiar interfaz a modo transferencia
-            document.getElementById('localCodeSection').classList.add('hidden');
-            document.getElementById('connectSection').classList.add('hidden');
-            document.getElementById('transferSection').classList.remove('hidden');
+        // Configuración de la UI compartida y handlers al conectar
+        function initTransferUI() {
+            // Animación y cambio visual del estado en el panel izquierdo
+            document.getElementById('orb-element').style.boxShadow = "0 0 40px rgba(34, 211, 238, 0.4), inset 0 0 20px rgba(34, 211, 238, 0.2)";
+            document.getElementById('pulse-status').style.color = "#4ade80";
+            document.getElementById('pulse-status').querySelector('.pulse-icon').style.backgroundColor = "#4ade80";
+            document.getElementById('pulse-status').querySelector('.pulse-icon').style.boxShadow = "0 0 10px #4ade80";
+            document.getElementById('status-string').innerText = "Enlace Activo P2P";
 
-            conn.on('open', () => {
-                console.log("Conexión WebRTC establecida.");
-            });
+            // Alternar paneles de la derecha
+            document.getElementById('setup-zone').classList.add('hidden');
+            document.getElementById('transfer-zone').classList.remove('hidden');
 
-            // Al recibir datos (la imagen)
+            conn.on('open', () => { console.log("Canal WebRTC Seguro abierto."); });
+
+            // Recepción de archivos
             conn.on('data', (data) => {
                 if (data.file && data.type.startsWith('image/')) {
-                    // Convertir el ArrayBuffer recibido de vuelta a un Blob de imagen
                     const blob = new Blob([data.file], { type: data.type });
                     const blobUrl = URL.createObjectURL(blob);
                     
-                    // Mostrar la imagen en pantalla
                     const previewZone = document.getElementById('preview');
+                    document.getElementById('preview-container').classList.remove('hidden');
+                    
                     previewZone.innerHTML = `
-                        <p style="color: #4ade80; margin-bottom: 10px;">¡Imagen Recibida!</p>
-                        <img src="${blobUrl}" alt="Recibida">
-                        <a href="${blobUrl}" download="imagen_recibida_${Date.now()}.png">
-                            <button style="background: #22c55e;">Descargar Imagen</button>
-                        </a>
+                        <img src="${blobUrl}" alt="Imagen recibida">
+                        <div style="padding: 12px;">
+                            <a href="${blobUrl}" download="astradrop_${Date.now()}.png" style="text-decoration: none;">
+                                <button style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);">
+                                    <i data-lucide="download"></i> Guardar Imagen
+                                </button>
+                            </a>
+                        </div>
                     `;
+                    lucide.createIcons(); // Actualiza iconos inyectados dinámicamente
                 }
             });
 
             conn.on('close', () => {
-                alert("La conexión se ha cerrado.");
+                alert("Conexión finalizada.");
                 location.reload();
             });
         }
 
-        // --- ENVIAR ARCHIVO ---
+        // Evento de envío de archivos
         document.getElementById('fileInput').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
-            // Mostrar preview local de lo que estás enviando
             const localUrl = URL.createObjectURL(file);
             const previewZone = document.getElementById('preview');
+            document.getElementById('preview-container').classList.remove('hidden');
+            
             previewZone.innerHTML = `
-                <p style="color: #38bdf8; margin-bottom: 10px;">Enviando...</p>
-                <img src="${localUrl}" alt="Enviando" style="opacity: 0.6;">
+                <img src="${localUrl}" alt="Enviando..." style="opacity: 0.5;">
+                <div style="padding: 12px; text-align: center; color: var(--text-cyan); font-weight: 600; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <i data-lucide="loader-2" class="spin" style="animation: spin 1s linear infinite;"></i> Transmitiendo paquete...
+                </div>
             `;
+            lucide.createIcons();
 
-            // Leer el archivo como ArrayBuffer para enviarlo por WebRTC
+            // Estilos CSS rápidos para la animación de carga del icono
+            const style = document.createElement('style');
+            style.innerHTML = '@keyframes spin { 100% { transform: rotate(360deg); } }';
+            document.head.appendChild(style);
+
             const reader = new FileReader();
             reader.onload = function(event) {
                 if (conn && conn.open) {
@@ -269,11 +481,12 @@
                         type: file.type
                     });
                     
-                    // Quitar la opacidad una vez enviado
+                    // Modificar estado al terminar
                     previewZone.querySelector('img').style.opacity = "1";
-                    previewZone.querySelector('p').innerText = "¡Enviado con éxito!";
+                    previewZone.querySelector('div').innerHTML = `<i data-lucide="check" style="color:#4ade80"></i> ¡Enviado con éxito!`;
+                    lucide.createIcons();
                 } else {
-                    alert("No hay ninguna conexión activa para enviar el archivo.");
+                    alert("Se perdió la conexión del canal.");
                 }
             };
             reader.readAsArrayBuffer(file);
