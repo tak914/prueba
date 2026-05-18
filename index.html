@@ -1,8 +1,283 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AirDrop Local - PeerShare</title>
+    <!-- Incluimos la librería PeerJS para la conexión P2P -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a, #1e1b4b, #2e1065);
+            --glass-bg: rgba(255, 255, 255, 0.07);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --glow-color: #a855f7;
+            --text-main: #f8fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-main);
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 30px;
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, #38bdf8, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .section {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .code-display {
+            font-size: 2rem;
+            font-weight: bold;
+            letter-spacing: 4px;
+            color: #38bdf8;
+            margin: 10px 0;
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+            text-align: center;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--glow-color);
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 12px;
+            background: linear-gradient(135deg, #a855f7, #6366f1);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .file-zone {
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            padding: 30px 20px;
+            border-radius: 16px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.02);
+            transition: background 0.3s;
+        }
+
+        .file-zone:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: #38bdf8;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .status {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin-top: 10px;
+        }
+
+        #preview img {
+            max-width: 100%;
+            border-radius: 12px;
+            margin-top: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
 <body>
-  <button onclick='fetch("https://script.google.com/macros/s/AKfycbyQFvECU1AhVeCo8ECof_mOT4qf0WBAPMk5UkSppy5vEc-NzBdYKQNs0SNUneiuGJuD0g/exec"})'>
-    Enviar Hola
-  </button>
+
+    <div class="container">
+        <h1>P2P Image Transfer</h1>
+
+        <!-- SECCIÓN 1: Tu código (Para cuando la PC espera conexión) -->
+        <div id="localCodeSection" class="section">
+            <p>El código de este dispositivo es:</p>
+            <div id="my-id" class="code-display">...</div>
+            <p class="status">Esperando que el otro dispositivo se conecte...</p>
+        </div>
+
+        <p style="margin-bottom: 20px; color: #64748b;">— O —</p>
+
+        <!-- SECCIÓN 2: Conectarse a otro dispositivo (Para el Celular) -->
+        <div id="connectSection" class="section">
+            <p style="margin-bottom: 10px;">Introduce el código del otro dispositivo:</p>
+            <input type="text" id="peer-id-input" placeholder="Ej: 1234" maxlength="4">
+            <button id="connect-btn">Conectar Dispositivos</button>
+        </div>
+
+        <!-- SECCIÓN 3: Envío y Recepción (Se activa al conectar) -->
+        <div id="transferSection" class="section hidden">
+            <div id="connection-status" style="color: #4ade80; font-weight: bold; margin-bottom: 15px;">
+                ¡Conectado exitosamente!
+            </div>
+            
+            <div class="file-zone" onclick="document.getElementById('fileInput').click()">
+                <p>📸 Toca aquí para seleccionar o tomar una foto</p>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+
+            <div id="preview"></div>
+        </div>
+    </div>
+
+    <script>
+        // Generamos un código corto de 4 dígitos para que sea fácil de tipear
+        const shortId = Math.floor(1000 + Math.random() * 9000).toString();
+        
+        // Inicializamos PeerJS usando los servidores públicos gratuitos
+        const peer = new Peer(shortId, {
+            debug: 1
+        });
+
+        let conn = null;
+
+        // Mostrar el ID generado en la pantalla
+        peer.on('open', (id) => {
+            document.getElementById('my-id').innerText = id;
+        });
+
+        // --- CASO A: Este dispositivo RECIBE la conexión (ej. la PC) ---
+        peer.on('connection', (connection) => {
+            conn = connection;
+            setupConnectionHandlers();
+        });
+
+        // --- CASO B: Este dispositivo INICIA la conexión (ej. el Celular) ---
+        document.getElementById('connect-btn').addEventListener('click', () => {
+            const remoteId = document.getElementById('peer-id-input').value.trim();
+            if (remoteId) {
+                conn = peer.connect(remoteId);
+                setupConnectionHandlers();
+            } else {
+                alert("Por favor, ingresa un código válido.");
+            }
+        });
+
+        // Manejo de la transferencia de datos una vez conectados
+        function setupConnectionHandlers() {
+            // Cambiar interfaz a modo transferencia
+            document.getElementById('localCodeSection').classList.add('hidden');
+            document.getElementById('connectSection').classList.add('hidden');
+            document.getElementById('transferSection').classList.remove('hidden');
+
+            conn.on('open', () => {
+                console.log("Conexión WebRTC establecida.");
+            });
+
+            // Al recibir datos (la imagen)
+            conn.on('data', (data) => {
+                if (data.file && data.type.startsWith('image/')) {
+                    // Convertir el ArrayBuffer recibido de vuelta a un Blob de imagen
+                    const blob = new Blob([data.file], { type: data.type });
+                    const blobUrl = URL.createObjectURL(blob);
+                    
+                    // Mostrar la imagen en pantalla
+                    const previewZone = document.getElementById('preview');
+                    previewZone.innerHTML = `
+                        <p style="color: #4ade80; margin-bottom: 10px;">¡Imagen Recibida!</p>
+                        <img src="${blobUrl}" alt="Recibida">
+                        <a href="${blobUrl}" download="imagen_recibida_${Date.now()}.png">
+                            <button style="background: #22c55e;">Descargar Imagen</button>
+                        </a>
+                    `;
+                }
+            });
+
+            conn.on('close', () => {
+                alert("La conexión se ha cerrado.");
+                location.reload();
+            });
+        }
+
+        // --- ENVIAR ARCHIVO ---
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Mostrar preview local de lo que estás enviando
+            const localUrl = URL.createObjectURL(file);
+            const previewZone = document.getElementById('preview');
+            previewZone.innerHTML = `
+                <p style="color: #38bdf8; margin-bottom: 10px;">Enviando...</p>
+                <img src="${localUrl}" alt="Enviando" style="opacity: 0.6;">
+            `;
+
+            // Leer el archivo como ArrayBuffer para enviarlo por WebRTC
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                if (conn && conn.open) {
+                    conn.send({
+                        file: event.target.result,
+                        filename: file.name,
+                        type: file.type
+                    });
+                    
+                    // Quitar la opacidad una vez enviado
+                    previewZone.querySelector('img').style.opacity = "1";
+                    previewZone.querySelector('p').innerText = "¡Enviado con éxito!";
+                } else {
+                    alert("No hay ninguna conexión activa para enviar el archivo.");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+    </script>
 </body>
 </html>
