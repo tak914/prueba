@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AstraDrop // P2P Image Sync</title>
+    <title>AstraDrop // P2P File Sync</title>
     <!-- Librería PeerJS para la conexión directa -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <!-- Lucide Icons para iconos vectoriales limpios -->
@@ -47,7 +47,6 @@
             overflow-x: hidden;
         }
 
-        /* Fondo decorativo de red futurista sutil */
         body::before {
             content: '';
             position: absolute;
@@ -80,16 +79,16 @@
             border-radius: 32px;
             width: 100%;
             max-width: 900px;
-            min-height: 480px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
             z-index: 1;
             overflow: hidden;
         }
 
-        /* Panel Izquierdo: Estado local y códigos */
+        .panels-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
         .panel-left {
             padding: 40px;
             border-right: 1px solid var(--glass-border);
@@ -100,7 +99,6 @@
             background: linear-gradient(180deg, transparent, rgba(6, 182, 212, 0.02));
         }
 
-        /* Panel Derecho: Inputs y controles */
         .panel-right {
             padding: 40px;
             display: flex;
@@ -121,10 +119,9 @@
             gap: 8px;
         }
 
-        /* Esfera de código estilo Sci-Fi */
         .code-orb {
-            width: 220px;
-            height: 220px;
+            width: 200px;
+            height: 200px;
             border-radius: 50%;
             background: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.05), transparent), var(--glass-highlight);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -132,9 +129,8 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 0 40px var(--cyan-glow), inset 0 0 20px rgba(6, 182, 212, 0.1);
+            box-shadow: 0 0 40px var(--cyan-glow);
             position: relative;
-            transition: all 0.5s ease;
         }
 
         .code-orb::before {
@@ -148,27 +144,8 @@
 
         @keyframes rotateOrb { 100% { transform: rotate(360deg); } }
 
-        .code-label {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .code-number {
-            font-size: 3.5rem;
-            font-weight: 900;
-            color: var(--text-cyan);
-            letter-spacing: 2px;
-            text-shadow: 0 0 15px rgba(34, 211, 238, 0.6);
-            margin: 5px 0;
-        }
-
-        /* Inputs Premium */
-        .input-wrapper {
-            position: relative;
-            margin-bottom: 16px;
-        }
+        .code-label { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
+        .code-number { font-size: 3.2rem; font-weight: 900; color: var(--text-cyan); letter-spacing: 2px; text-shadow: 0 0 15px rgba(34, 211, 238, 0.6); margin: 5px 0; }
 
         input[type="text"] {
             width: 100%;
@@ -182,16 +159,14 @@
             letter-spacing: 4px;
             text-align: center;
             outline: none;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s;
         }
 
         input[type="text"]:focus {
             border-color: #a855f7;
             box-shadow: 0 0 25px var(--purple-glow);
-            background: rgba(0, 0, 0, 0.4);
         }
 
-        /* Botón con gradiente animado */
         button {
             width: 100%;
             padding: 16px;
@@ -201,7 +176,6 @@
             color: white;
             font-size: 1rem;
             font-weight: 700;
-            letter-spacing: 0.5px;
             cursor: pointer;
             display: flex;
             justify-content: center;
@@ -211,18 +185,11 @@
             transition: all 0.3s;
         }
 
-        button:hover {
-            opacity: 0.95;
-            box-shadow: 0 8px 25px rgba(168, 85, 247, 0.4);
-            transform: translateY(-1px);
-        }
+        button:hover { opacity: 0.95; transform: translateY(-1px); }
 
-        button:active { transform: translateY(1px); }
-
-        /* Zona de carga Dropzone */
         .dropzone {
             border: 2px dashed rgba(255, 255, 255, 0.15);
-            padding: 40px 20px;
+            padding: 35px 20px;
             border-radius: 20px;
             text-align: center;
             cursor: pointer;
@@ -237,55 +204,133 @@
         .dropzone:hover {
             border-color: var(--text-cyan);
             background: rgba(6, 182, 212, 0.02);
-            box-shadow: 0 0 20px rgba(6, 182, 212, 0.05);
-        }
-
-        .dropzone p {
-            font-size: 0.95rem;
-            color: var(--text-secondary);
-            font-weight: 500;
         }
 
         #fileInput { display: none; }
 
-        /* Preview Dinámico */
-        .preview-box {
-            margin-top: 20px;
-            border-radius: 16px;
-            overflow: hidden;
-            border: 1px solid var(--glass-border);
-            position: relative;
-            background: rgba(0,0,0,0.3);
+        /* --- SECCIÓN HISTORIAL Y TABS --- */
+        .history-section {
+            border-top: 1px solid var(--glass-border);
+            background: rgba(0, 0, 0, 0.15);
+            padding: 24px;
         }
 
-        .preview-box img {
-            width: 100%;
-            height: auto;
-            display: block;
-            max-height: 250px;
-            object-fit: contain;
-            padding: 10px;
+        .tabs-header {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 10px;
         }
 
-        .status-text {
-            font-size: 0.85rem;
+        .tab-btn {
+            background: transparent;
+            border: none;
             color: var(--text-secondary);
-            margin-top: 12px;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: none;
+            width: auto;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover { background: rgba(255, 255, 255, 0.03); color: var(--text-primary); }
+
+        .tab-btn.active {
+            color: var(--text-cyan);
+            background: rgba(6, 182, 212, 0.1);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+        }
+
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 220px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        /* Scrollbar estética */
+        .file-list::-webkit-scrollbar { width: 6px; }
+        .file-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+        .file-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            overflow: hidden;
+        }
+
+        .file-icon-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.05);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            flex-shrink: 0;
         }
 
-        .pulse-icon {
-            width: 8px;
-            height: 8px;
-            background-color: #22d3ee;
-            border-radius: 50%;
-            box-shadow: 0 0 10px #22d3ee;
-            animation: pulse 2s infinite;
+        .file-meta {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
+        .file-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: text-overflow;
+            text-overflow: ellipsis;
+        }
+
+        .file-size {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .action-btn {
+            width: auto;
+            padding: 8px 14px;
+            font-size: 0.8rem;
+            border-radius: 8px;
+        }
+
+        .btn-download { background: linear-gradient(135deg, #06b6d4, #3b82f6); box-shadow: none; }
+        .status-badge { font-size: 0.8rem; font-weight: 600; padding: 4px 10px; border-radius: 6px; }
+        .status-sending { background: rgba(234, 179, 8, 0.1); color: #facc15; }
+        .status-success { background: rgba(74, 222, 128, 0.1); color: #4ade80; }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            padding: 30px 0;
+        }
+
+        .status-text { font-size: 0.85rem; color: var(--text-secondary); margin-top: 12px; display: flex; align-items: center; gap: 6px; }
+        .pulse-icon { width: 8px; height: 8px; background-color: #22d3ee; border-radius: 50%; box-shadow: 0 0 10px #22d3ee; animation: pulse 2s infinite; }
+        
         @keyframes pulse {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.7); }
             70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(34, 211, 238, 0); }
@@ -294,25 +339,10 @@
 
         .hidden { display: none !important; }
 
-        /* Ajustes Responsivos para celulares */
         @media (max-width: 768px) {
-            .dashboard {
-                grid-template-columns: 1fr;
-                border-radius: 24px;
-            }
-            .panel-left {
-                border-right: none;
-                border-bottom: 1px solid var(--glass-border);
-                padding: 30px 20px;
-            }
-            .panel-right {
-                padding: 30px 20px;
-            }
-            .code-orb {
-                width: 180px;
-                height: 180px;
-            }
-            .code-number { font-size: 2.8rem; }
+            .panels-container { grid-template-columns: 1fr; }
+            .panel-left { border-right: none; border-bottom: 1px solid var(--glass-border); padding: 30px 20px; }
+            .panel-right { padding: 30px 20px; }
         }
     </style>
 </head>
@@ -322,155 +352,183 @@
 
     <div class="dashboard">
         
-        <!-- PANEL IZQUIERDO: ESTADO / CÓDIGO LOCAL -->
-        <div class="panel-left">
-            <div class="section-title">
-                <i data-lucide="radio"></i> Dispositivo Local
-            </div>
-            
-            <div class="code-orb" id="orb-element">
-                <span class="code-label">Tu Código</span>
-                <div class="code-number" id="my-id">••••</div>
+        <!-- CONTENEDOR DE PANELES PRINCIPALES -->
+        <div class="panels-container">
+            <!-- PANEL IZQUIERDO: ESTADO / CÓDIGO -->
+            <div class="panel-left">
+                <div class="section-title"><i data-lucide="radio"></i> Nodo Local</div>
+                <div class="code-orb" id="orb-element">
+                    <span class="code-label">Tu Código</span>
+                    <div class="code-number" id="my-id">••••</div>
+                </div>
+                <div class="status-text" id="pulse-status">
+                    <span class="pulse-icon"></span>
+                    <span id="status-string">Iniciando protocolo...</span>
+                </div>
             </div>
 
-            <div class="status-text" id="pulse-status">
-                <span class="pulse-icon"></span>
-                <span id="status-string">Generando par cifrado...</span>
+            <!-- PANEL DERECHO: ACCIONES -->
+            <div class="panel-right">
+                <!-- Zona Configuración Inicial -->
+                <div id="setup-zone">
+                    <div class="section-title"><i data-lucide="unplug"></i> Vincular Canal</div>
+                    <div style="margin-bottom: 16px;">
+                        <input type="text" id="peer-id-input" placeholder="0000" maxlength="4" autocomplete="off">
+                    </div>
+                    <button id="connect-btn"><i data-lucide="link"></i> Establecer Conexión</button>
+                </div>
+
+                <!-- Zona Activa de Transferencia -->
+                <div id="transfer-zone" class="hidden">
+                    <div class="section-title" style="color: #4ade80;"><i data-lucide="shield-check"></i> Enlace Cifrado Activo</div>
+                    <div class="dropzone" onclick="document.getElementById('fileInput').click()">
+                        <i data-lucide="upload-cloud" style="width: 40px; height: 40px; color: var(--text-cyan);"></i>
+                        <p>Haz clic o arrastra cualquier archivo aquí</p>
+                        <input type="file" id="fileInput">
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- PANEL DERECHO: CONEXIÓN Y OPERACIONES -->
-        <div class="panel-right">
-            
-            <!-- Modo Espera: Conectar dispositivo remoto -->
-            <div id="setup-zone">
-                <div class="section-title">
-                    <i data-lucide="smartphone-converting"></i> Vincular Dispositivos
-                </div>
-                <div class="input-wrapper">
-                    <input type="text" id="peer-id-input" placeholder="0000" maxlength="4" autocomplete="off">
-                </div>
-                <button id="connect-btn">
-                    <i data-lucide="link"></i> Conectar e Intercambiar
+        <!-- SECCIÓN INFERIOR: HISTORIAL DE ENVIADOS / RECIBIDOS -->
+        <div id="history-panel" class="history-section hidden">
+            <div class="tabs-header">
+                <button class="tab-btn active" onclick="switchTab('received')">
+                    <i data-lucide="arrow-down-left" style="width:14px; height:14px; display:inline; vertical-align:middle; margin-right:4px;"></i>Recibidos (<span id="count-received">0</span>)
+                </button>
+                <button class="tab-btn" onclick="switchTab('sent')">
+                    <i data-lucide="arrow-up-right" style="width:14px; height:14px; display:inline; vertical-align:middle; margin-right:4px;"></i>Enviados (<span id="count-sent">0</span>)
                 </button>
             </div>
 
-            <!-- Modo Activo: Transferencia de Archivos -->
-            <div id="transfer-zone" class="hidden">
-                <div class="section-title" style="color: #4ade80;">
-                    <i data-lucide="check-circle-2"></i> Canal Sincronizado
-                </div>
-                
-                <div class="dropzone" onclick="document.getElementById('fileInput').click()">
-                    <i data-lucide="image-plus" style="width: 36px; height: 36px; color: var(--text-cyan);"></i>
-                    <p>Arrastra imágenes aquí o haz clic para buscar</p>
-                    <input type="file" id="fileInput" accept="image/*">
-                </div>
-
-                <div id="preview-container" class="hidden">
-                    <div class="preview-box" id="preview"></div>
-                </div>
+            <!-- Lista Recibidos -->
+            <div id="list-received" class="file-list">
+                <div class="empty-state">No se han recibido archivos en esta sesión.</div>
             </div>
 
+            <!-- Lista Enviados (Oculta por defecto) -->
+            <div id="list-sent" class="file-list hidden">
+                <div class="empty-state">No has enviado archivos todavía.</div>
+            </div>
         </div>
+
     </div>
 
     <script>
-        // Inicializar iconos de Lucide
         lucide.createIcons();
 
-        // Generar un código de enlace de 4 dígitos aleatorio
         const shortId = Math.floor(1000 + Math.random() * 9000).toString();
-        
         const peer = new Peer(shortId, { debug: 1 });
         let conn = null;
 
-        // Al abrir la conexión PeerJS
+        let sentCount = 0;
+        let receivedCount = 0;
+
         peer.on('open', (id) => {
             document.getElementById('my-id').innerText = id;
-            document.getElementById('status-string').innerText = "Esperando enlace entrante...";
+            document.getElementById('status-string').innerText = "Listo para emparejar";
         });
 
-        // Escucha si otro dispositivo introduce nuestro código (Caso PC / Receptor)
         peer.on('connection', (connection) => {
             conn = connection;
-            initTransferUI();
+            bindConnection();
         });
 
-        // Ejecutar conexión manual al hacer click (Caso Celular / Emisor)
         document.getElementById('connect-btn').addEventListener('click', () => {
             const remoteId = document.getElementById('peer-id-input').value.trim();
             if (remoteId) {
                 conn = peer.connect(remoteId);
-                initTransferUI();
+                bindConnection();
             }
         });
 
-        // Configuración de la UI compartida y handlers al conectar
-        function initTransferUI() {
-            // Animación y cambio visual del estado en el panel izquierdo
-            document.getElementById('orb-element').style.boxShadow = "0 0 40px rgba(34, 211, 238, 0.4), inset 0 0 20px rgba(34, 211, 238, 0.2)";
+        function bindConnection() {
+            // Cambios estéticos de conexión exitosa
+            document.getElementById('orb-element').style.boxShadow = "0 0 40px rgba(34, 211, 238, 0.3)";
             document.getElementById('pulse-status').style.color = "#4ade80";
             document.getElementById('pulse-status').querySelector('.pulse-icon').style.backgroundColor = "#4ade80";
-            document.getElementById('pulse-status').querySelector('.pulse-icon').style.boxShadow = "0 0 10px #4ade80";
-            document.getElementById('status-string').innerText = "Enlace Activo P2P";
+            document.getElementById('status-string').innerText = "Conexión P2P Establecida";
 
-            // Alternar paneles de la derecha
             document.getElementById('setup-zone').classList.add('hidden');
             document.getElementById('transfer-zone').classList.remove('hidden');
+            document.getElementById('history-panel').classList.remove('hidden');
 
-            conn.on('open', () => { console.log("Canal WebRTC Seguro abierto."); });
-
-            // Recepción de archivos
             conn.on('data', (data) => {
-                if (data.file && data.type.startsWith('image/')) {
+                if (data.file) {
+                    receivedCount++;
+                    document.getElementById('count-received').innerText = receivedCount;
+                    
+                    // Eliminar empty state si existe
+                    const container = document.getElementById('list-received');
+                    if(receivedCount === 1) container.innerHTML = '';
+
                     const blob = new Blob([data.file], { type: data.type });
                     const blobUrl = URL.createObjectURL(blob);
                     
-                    const previewZone = document.getElementById('preview');
-                    document.getElementById('preview-container').classList.remove('hidden');
-                    
-                    previewZone.innerHTML = `
-                        <img src="${blobUrl}" alt="Imagen recibida">
-                        <div style="padding: 12px;">
-                            <a href="${blobUrl}" download="astradrop_${Date.now()}.png" style="text-decoration: none;">
-                                <button style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);">
-                                    <i data-lucide="download"></i> Guardar Imagen
-                                </button>
-                            </a>
+                    // Detectar icono apropiado
+                    let iconName = 'file-text';
+                    if(data.type.startsWith('image/')) iconName = 'image';
+                    else if(data.type.startsWith('video/')) iconName = 'video';
+                    else if(data.type.includes('zip') || data.type.includes('rar')) iconName = 'folder-archive';
+
+                    const item = document.createElement('div');
+                    item.className = 'file-item';
+                    item.innerHTML = `
+                        <div class="file-info">
+                            <div class="file-icon-box"><i data-lucide="${iconName}" style="color:var(--text-cyan)"></i></div>
+                            <div class="file-meta">
+                                <span class="file-name" title="${data.filename}">${data.filename}</span>
+                                <span class="file-size">${formatBytes(data.size)}</span>
+                            </div>
                         </div>
+                        <a href="${blobUrl}" download="${data.filename}" style="text-decoration:none;">
+                            <button class="action-btn btn-download"><i data-lucide="download" style="width:14px; height:14px;"></i> Descargar</button>
+                        </a>
                     `;
-                    lucide.createIcons(); // Actualiza iconos inyectados dinámicamente
+                    container.insertBefore(item, container.firstChild);
+                    lucide.createIcons();
                 }
             });
 
             conn.on('close', () => {
-                alert("Conexión finalizada.");
+                alert("La conexión se ha cerrado de forma remota.");
                 location.reload();
             });
         }
 
-        // Evento de envío de archivos
+        // Envío de archivos (cualquier tipo)
         document.getElementById('fileInput').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
-            const localUrl = URL.createObjectURL(file);
-            const previewZone = document.getElementById('preview');
-            document.getElementById('preview-container').classList.remove('hidden');
-            
-            previewZone.innerHTML = `
-                <img src="${localUrl}" alt="Enviando..." style="opacity: 0.5;">
-                <div style="padding: 12px; text-align: center; color: var(--text-cyan); font-weight: 600; display:flex; align-items:center; justify-content:center; gap:8px;">
-                    <i data-lucide="loader-2" class="spin" style="animation: spin 1s linear infinite;"></i> Transmitiendo paquete...
-                </div>
-            `;
-            lucide.createIcons();
+            sentCount++;
+            document.getElementById('count-sent').innerText = sentCount;
 
-            // Estilos CSS rápidos para la animación de carga del icono
-            const style = document.createElement('style');
-            style.innerHTML = '@keyframes spin { 100% { transform: rotate(360deg); } }';
-            document.head.appendChild(style);
+            const container = document.getElementById('list-sent');
+            if(sentCount === 1) container.innerHTML = '';
+
+            // Crear fila en historial de enviados en estado "enviando"
+            const itemUniqueId = 'sending-' + Date.now();
+            let iconName = 'file-text';
+            if(file.type.startsWith('image/')) iconName = 'image';
+            else if(file.type.startsWith('video/')) iconName = 'video';
+            else if(file.type.includes('zip') || file.type.includes('rar')) iconName = 'folder-archive';
+
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            item.id = itemUniqueId;
+            item.innerHTML = `
+                <div class="file-info">
+                    <div class="file-icon-box"><i data-lucide="${iconName}" style="color:var(--text-purple)"></i></div>
+                    <div class="file-meta">
+                        <span class="file-name" title="${file.name}">${file.name}</span>
+                        <span class="file-size">${formatBytes(file.size)}</span>
+                    </div>
+                </div>
+                <span class="status-badge status-sending" id="badge-${itemUniqueId}">Enviando...</span>
+            `;
+            container.insertBefore(item, container.firstChild);
+            lucide.createIcons();
 
             const reader = new FileReader();
             reader.onload = function(event) {
@@ -478,19 +536,42 @@
                     conn.send({
                         file: event.target.result,
                         filename: file.name,
-                        type: file.type
+                        type: file.type,
+                        size: file.size
                     });
                     
-                    // Modificar estado al terminar
-                    previewZone.querySelector('img').style.opacity = "1";
-                    previewZone.querySelector('div').innerHTML = `<i data-lucide="check" style="color:#4ade80"></i> ¡Enviado con éxito!`;
-                    lucide.createIcons();
+                    // Cambiar estado a Éxito
+                    const badge = document.getElementById(`badge-${itemUniqueId}`);
+                    if(badge) {
+                        badge.className = 'status-badge status-success';
+                        badge.innerText = 'Enviado';
+                    }
                 } else {
-                    alert("Se perdió la conexión del canal.");
+                    alert("Error: El canal P2P no está activo.");
                 }
             };
             reader.readAsArrayBuffer(file);
         });
+
+        // Alternar entre pestañas de enviados y recibidos
+        function switchTab(type) {
+            const tabs = document.querySelectorAll('.tab-btn');
+            tabs[0].classList.toggle('active', type === 'received');
+            tabs[1].classList.toggle('active', type === 'sent');
+
+            document.getElementById('list-received').classList.toggle('hidden', type !== 'received');
+            document.getElementById('list-sent').classList.toggle('hidden', type !== 'sent');
+        }
+
+        // Formateador utilitario de peso de archivos
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
     </script>
 </body>
 </html>
