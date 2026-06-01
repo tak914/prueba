@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>AstraDrop X</title>
+
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<style>
+
+:root{
+    --bg:#060816;
+    --card:rgba(14,18,35,.7);
+    --border:rgba(255,255,255,.08);
+
+    --cyan:#22d3ee;
+    --purple:#a855f7;
+    --green:#4ade80;
+    --muted:#94a3b8;
+    --text:#f8fafc;
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Inter,system-ui,sans-serif;
+}
+
+body{
+    background:
+        radial-gradient(circle at top left, rgba(34,211,238,.12), transparent 35%),
+        radial-gradient(circle at bottom right, rgba(168,85,247,.14), transparent 35%),
+        var(--bg);
+
+    min-height:100vh;
+    color:var(--text);
+    padding:24px;
+    overflow-x:hidden;
+}
+
+body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+
+    background-image:
+        linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+
+    background-size:42px 42px;
+    pointer-events:none;
+}
+
+.app{
+    max-width:1200px;
+    margin:auto;
+}
+
+.topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:24px;
+    gap:20px;
+    flex-wrap:wrap;
+}
+
+.brand{
+    display:flex;
+    align-items:center;
+    gap:16px;
+}
+
+.logo{
+    width:70px;
+    height:70px;
+    border-radius:22px;
+
+    background:
+        linear-gradient(135deg, rgba(34,211,238,.15), rgba(168,85,247,.15));
+
+    border:1px solid rgba(255,255,255,.08);
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    box-shadow:0 0 35px rgba(34,211,238,.18);
+}
+
+.brand h1{
+    font-size:2.4rem;
+    font-weight:900;
+
+    background:linear-gradient(135deg,var(--cyan),var(--purple));
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+}
+
+.brand p{
+    color:var(--muted);
+    margin-top:4px;
+}
+
+.live{
+    display:flex;
+    align-items:center;
+    gap:10px;
+
+    padding:12px 18px;
+    border-radius:999px;
+
+    background:rgba(34,211,238,.08);
+
+    border:1px solid rgba(34,211,238,.15);
+
+    color:var(--cyan);
+    font-weight:700;
+}
+
+.dot{
+    width:10px;
+    height:10px;
+    border-radius:50%;
+    background:var(--green);
+    box-shadow:0 0 12px var(--green);
+    animation:pulse 2s infinite;
+}
+
+@keyframes pulse{
+    0%{transform:scale(.9)}
+    50%{transform:scale(1.3)}
+    100%{transform:scale(.9)}
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:360px 1fr;
+    gap:24px;
+}
+
+.card{
+    background:var(--card);
+    backdrop-filter:blur(22px);
+
+    border:1px solid var(--border);
+
+    border-radius:32px;
+
+    overflow:hidden;
+}
+
+.sidebar{
+    padding:28px;
+}
+
+.section{
+    margin-bottom:28px;
+}
+
+.section:last-child{
+    margin-bottom:0;
+}
+
+.section-title{
+    display:flex;
+    align-items:center;
+    gap:10px;
+
+    color:var(--muted);
+
+    text-transform:uppercase;
+    letter-spacing:1px;
+
+    font-size:.8rem;
+    font-weight:800;
+
+    margin-bottom:16px;
+}
+
+.orb{
+    height:260px;
+    border-radius:30px;
+
+    background:
+        radial-gradient(circle at top, rgba(255,255,255,.08), transparent),
+        linear-gradient(180deg, rgba(34,211,238,.08), rgba(168,85,247,.08));
+
+    border:1px solid rgba(255,255,255,.08);
+
+    position:relative;
+    overflow:hidden;
+
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+}
+
+.orb::before{
+    content:"";
+    position:absolute;
+
+    width:320px;
+    height:320px;
+
+    border-radius:50%;
+    border:1px dashed rgba(255,255,255,.08);
+
+    animation:spin 18s linear infinite;
+}
+
+@keyframes spin{
+    100%{transform:rotate(360deg)}
+}
+
+.peer-label{
+    color:var(--muted);
+    text-transform:uppercase;
+    font-size:.8rem;
+    letter-spacing:2px;
+}
+
+.peer-id{
+    font-size:4rem;
+    font-weight:900;
+    margin-top:10px;
+
+    color:var(--cyan);
+
+    text-shadow:0 0 25px rgba(34,211,238,.35);
+}
+
+.status{
+    margin-top:16px;
+
+    display:flex;
+    align-items:center;
+    gap:10px;
+
+    padding:14px 16px;
+
+    border-radius:16px;
+
+    background:rgba(255,255,255,.03);
+
+    color:var(--muted);
+}
+
+.connected-card{
+    margin-top:18px;
+
+    display:flex;
+    align-items:center;
+    gap:14px;
+
+    background:rgba(255,255,255,.03);
+
+    border:1px solid rgba(255,255,255,.05);
+
+    padding:16px;
+    border-radius:22px;
+}
+
+.connected-card i{
+    width:44px;
+    height:44px;
+
+    color:var(--cyan);
+
+    padding:10px;
+
+    border-radius:14px;
+
+    background:rgba(34,211,238,.08);
+}
+
+.connected-card .label{
+    font-size:.8rem;
+    color:var(--muted);
+}
+
+.connected-card h3{
+    margin-top:4px;
+    font-size:1rem;
+}
+
+input{
+    width:100%;
+    padding:18px;
+
+    background:rgba(255,255,255,.03);
+
+    border:1px solid rgba(255,255,255,.08);
+
+    border-radius:18px;
+
+    color:white;
+
+    font-size:1.1rem;
+    font-weight:800;
+
+    text-align:center;
+    letter-spacing:4px;
+
+    outline:none;
+}
+
+button{
+    border:none;
+    cursor:pointer;
+}
+
+.primary-btn{
+    width:100%;
+
+    margin-top:16px;
+
+    padding:18px;
+
+    border-radius:18px;
+
+    background:linear-gradient(135deg,var(--purple),#6366f1);
+
+    color:white;
+    font-weight:800;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:10px;
+
+    transition:.25s;
+}
+
+.primary-btn:hover{
+    transform:translateY(-2px);
+}
+
+.main{
+    padding:28px;
+    display:flex;
+    flex-direction:column;
+    gap:22px;
+}
+
+.hero{
+    border-radius:28px;
+
+    padding:28px;
+
+    background:
+        linear-gradient(135deg, rgba(34,211,238,.12), rgba(168,85,247,.12));
+
+    border:1px solid rgba(255,255,255,.08);
+}
+
+.hero h2{
+    font-size:2rem;
+    margin-bottom:10px;
+}
+
+.hero p{
+    color:var(--muted);
+    max-width:650px;
+    line-height:1.6;
+}
+
+.stats{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:16px;
+}
+
+.stat{
+    background:rgba(255,255,255,.03);
+
+    border:1px solid rgba(255,255,255,.05);
+
+    border-radius:22px;
+
+    padding:20px;
+}
+
+.stat-value{
+    margin-top:12px;
+
+    font-size:1.8rem;
+    font-weight:900;
+}
+
+.stat-label{
+    color:var(--muted);
+    margin-top:6px;
+    font-size:.9rem;
+}
+
+.transfer-zone{
+    border:2px dashed rgba(255,255,255,.12);
+
+    border-radius:28px;
+
+    padding:50px 20px;
+
+    text-align:center;
+
+    background:rgba(255,255,255,.02);
+
+    transition:.3s;
+
+    cursor:pointer;
+}
+
+.transfer-zone.drag{
+    border-color:var(--cyan);
+    background:rgba(34,211,238,.05);
+}
+
+.transfer-zone i{
+    width:56px;
+    height:56px;
+    color:var(--cyan);
+    margin-bottom:14px;
+}
+
+.transfer-zone h3{
+    margin-bottom:8px;
+}
+
+.transfer-zone p{
+    color:var(--muted);
+}
+
+#fileInput{
+    display:none;
+}
+
+.toolbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+    flex-wrap:wrap;
+}
+
+.tabs{
+    display:flex;
+    gap:10px;
+}
+
+.tab{
+    padding:10px 18px;
+
+    border-radius:14px;
+
+    background:rgba(255,255,255,.03);
+
+    border:1px solid transparent;
+
+    color:var(--muted);
+    font-weight:700;
+}
+
+.tab.active{
+    background:rgba(34,211,238,.08);
+
+    border-color:rgba(34,211,238,.15);
+
+    color:var(--cyan);
+}
+
+.search{
+    width:260px;
+
+    padding:14px 16px;
+
+    border-radius:14px;
+
+    border:1px solid rgba(255,255,255,.06);
+
+    background:rgba(255,255,255,.03);
+
+    color:white;
+
+    outline:none;
+}
+
+.list{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+}
+
+.file-item{
+    background:rgba(255,255,255,.03);
+
+    border:1px solid rgba(255,255,255,.05);
+
+    border-radius:22px;
+
+    padding:16px;
+
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+}
+
+.file-left{
+    display:flex;
+    align-items:center;
+    gap:14px;
+
+    min-width:0;
+}
+
+.file-icon{
+    width:52px;
+    height:52px;
+
+    border-radius:18px;
+
+    background:rgba(255,255,255,.05);
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.file-name{
+    font-weight:700;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.file-meta{
+    margin-top:4px;
+    font-size:.85rem;
+    color:var(--muted);
+}
+
+.download-btn{
+    text-decoration:none;
+
+    padding:12px 18px;
+
+    border-radius:14px;
+
+    background:linear-gradient(135deg,var(--cyan),#3b82f6);
+
+    color:white;
+    font-weight:700;
+
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+.badge{
+    padding:10px 14px;
+    border-radius:12px;
+    font-size:.85rem;
+    font-weight:800;
+}
+
+.badge.sending{
+    background:rgba(250,204,21,.1);
+    color:#facc15;
+}
+
+.badge.success{
+    background:rgba(74,222,128,.1);
+    color:var(--green);
+}
+
+.empty{
+    text-align:center;
+    padding:50px 10px;
+    color:var(--muted);
+}
+
+.hidden{
+    display:none !important;
+}
+
+@media(max-width:1000px){
+
+    .grid{
+        grid-template-columns:1fr;
+    }
+
+    .stats{
+        grid-template-columns:repeat(2,1fr);
+    }
+}
+
+@media(max-width:700px){
+
+    .stats{
+        grid-template-columns:1fr;
+    }
+
+    .search{
+        width:100%;
+    }
+
+    .toolbar{
+        flex-direction:column;
+        align-items:stretch;
+    }
+
+    .peer-id{
+        font-size:3rem;
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <div class="topbar">
+
+        <div class="brand">
+
+            <div class="logo">
+                <i data-lucide="satellite"></i>
+            </div>
+
+            <div>
+                <h1>AstraDrop X</h1>
+                <p>P2P futuristic file transfer</p>
+            </div>
+
+        </div>
+
+        <div class="live">
+            <div class="dot"></div>
+            Online
+        </div>
+
+    </div>
+
+    <div class="grid">
+
+        <!-- SIDEBAR -->
+
+        <div class="card sidebar">
+
+            <div class="section">
+
+                <div class="section-title">
+                    <i data-lucide="cpu"></i>
+                    Nodo Local
+                </div>
+
+                <div class="orb">
+
+                    <div class="peer-label">
+                        Tu Código
+                    </div>
+
+                    <div class="peer-id" id="my-id">
+                        ••••
+                    </div>
+
+                </div>
+
+                <div class="status">
+                    <div class="dot"></div>
+                    <span id="status-text">
+                        Inicializando...
+                    </span>
+                </div>
+
+                <!-- NUEVO PANEL -->
+
+                <div class="connected-card hidden" id="device-card">
+
+                    <i data-lucide="monitor-smartphone"></i>
+
+                    <div>
+                        <div class="label">
+                            Conectado a
+                        </div>
+
+                        <h3 id="connected-device">
+                            Esperando...
+                        </h3>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="section">
+
+                <div class="section-title">
+                    <i data-lucide="plug-zap"></i>
+                    Conectar
+                </div>
+
+                <input
+                    type="text"
+                    id="peer-id-input"
+                    placeholder="0000"
+                    maxlength="4"
+                    autocomplete="off"
+                >
+
+                <button class="primary-btn" id="connect-btn">
+                    <i data-lucide="link"></i>
+                    Establecer conexión
+                </button>
+
+            </div>
+
+        </div>
+
+        <!-- MAIN -->
+
+        <div class="card main">
+
+            <div class="hero">
+                <h2>Transferencias instantáneas</h2>
+
+                <p>
+                    Comparte archivos directamente entre dispositivos
+                    usando conexión P2P segura y sin servidores.
+                </p>
+            </div>
+
+            <div class="stats">
+
+                <div class="stat">
+                    <i data-lucide="send"></i>
+
+                    <div class="stat-value" id="sent-count">
+                        0
+                    </div>
+
+                    <div class="stat-label">
+                        Archivos enviados
+                    </div>
+                </div>
+
+                <div class="stat">
+                    <i data-lucide="download"></i>
+
+                    <div class="stat-value" id="received-count">
+                        0
+                    </div>
+
+                    <div class="stat-label">
+                        Archivos recibidos
+                    </div>
+                </div>
+
+                <div class="stat">
+                    <i data-lucide="hard-drive"></i>
+
+                    <div class="stat-value" id="sent-size">
+                        0 MB
+                    </div>
+
+                    <div class="stat-label">
+                        Datos enviados
+                    </div>
+                </div>
+
+                <div class="stat">
+                    <i data-lucide="wifi"></i>
+
+                    <div class="stat-value" id="connection-state">
+                        OFF
+                    </div>
+
+                    <div class="stat-label">
+                        Estado conexión
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="transfer-zone hidden" id="transfer-zone">
+
+                <i data-lucide="cloud-upload"></i>
+
+                <h3>
+                    Arrastra archivos aquí
+                </h3>
+
+                <p>
+                    o haz clic para seleccionar
+                </p>
+
+                <input type="file" id="fileInput" multiple>
+
+            </div>
+
+            <div class="toolbar">
+
+                <div class="tabs">
+
+                    <button class="tab active" data-tab="received">
+                        Recibidos
+                    </button>
+
+                    <button class="tab" data-tab="sent">
+                        Enviados
+                    </button>
+
+                </div>
+
+                <input
+                    type="text"
+                    class="search"
+                    id="searchInput"
+                    placeholder="Buscar archivos..."
+                >
+
+            </div>
+
+            <div class="list" id="received-list">
+
+                <div class="empty">
+                    No se recibieron archivos.
+                </div>
+
+            </div>
+
+            <div class="list hidden" id="sent-list">
+
+                <div class="empty">
+                    No has enviado archivos.
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+lucide.createIcons();
+
+const DEVICE_NAME = getDeviceName();
+
+const shortId =
+    Math.floor(1000 + Math.random() * 9000).toString();
+
+const peer =
+    new Peer(shortId, { debug: 1 });
+
+let conn = null;
+
+let totalSent = 0;
+let totalReceived = 0;
+let totalSentBytes = 0;
+
+peer.on("open", id => {
+
+    document.getElementById("my-id").textContent = id;
+
+    document.getElementById("status-text").textContent =
+        "Esperando conexión...";
+});
+
+peer.on("connection", connection => {
+
+    conn = connection;
+
+    setupConnection();
+});
+
+document
+.getElementById("connect-btn")
+.addEventListener("click", () => {
+
+    const remoteId =
+        document
+        .getElementById("peer-id-input")
+        .value
+        .trim();
+
+    if(!remoteId) return;
+
+    conn = peer.connect(remoteId);
+
+    setupConnection();
+});
+
+function setupConnection(){
+
+    conn.on("open", () => {
+
+        document.getElementById("status-text").textContent =
+            "Conexión establecida";
+
+        document.getElementById("connection-state").textContent =
+            "ON";
+
+        document
+        .getElementById("transfer-zone")
+        .classList.remove("hidden");
+
+        sendDeviceInfo();
+    });
+
+    conn.on("data", data => {
+
+        // NUEVO SISTEMA DEVICE INFO
+
+        if(data.type === "device-info"){
+
+            document
+            .getElementById("device-card")
+            .classList.remove("hidden");
+
+            document
+            .getElementById("connected-device")
+            .innerHTML =
+                `${data.icon} ${data.deviceName}<br>
+                <span style="font-size:.8rem;color:var(--muted)">
+                    ID: ${data.peerId}
+                </span>`;
+
+            return;
+        }
+
+        // ARCHIVOS
+
+        if(data.file){
+
+            totalReceived++;
+
+            document.getElementById("received-count").textContent =
+                totalReceived;
+
+            const container =
+                document.getElementById("received-list");
+
+            if(totalReceived === 1){
+                container.innerHTML = "";
+            }
+
+            const blob =
+                new Blob([data.file], {
+                    type:data.type
+                });
+
+            const url =
+                URL.createObjectURL(blob);
+
+            const item =
+                createFileItem({
+                    name:data.filename,
+                    size:data.size,
+                    type:data.type,
+                    url,
+                    received:true
+                });
+
+            container.prepend(item);
+
+            playSound(700);
+        }
+    });
+
+    conn.on("close", () => {
+
+        document.getElementById("status-text").textContent =
+            "Conexión cerrada";
+
+        document.getElementById("connection-state").textContent =
+            "OFF";
+
+        document
+        .getElementById("device-card")
+        .classList.add("hidden");
+
+        document
+        .getElementById("transfer-zone")
+        .classList.add("hidden");
+    });
+}
+
+function sendDeviceInfo(){
+
+    conn.send({
+        type:"device-info",
+        deviceName:DEVICE_NAME.name,
+        icon:DEVICE_NAME.icon,
+        peerId:peer.id
+    });
+}
+
+function getDeviceName(){
+
+    const ua = navigator.userAgent;
+
+    if(/android/i.test(ua)){
+
+        if(/tv/i.test(ua)){
+            return {
+                name:"Android TV",
+                icon:"📺"
+            };
+        }
+
+        return {
+            name:"Android",
+            icon:"📱"
+        };
+    }
+
+    if(/iphone/i.test(ua)){
+
+        return {
+            name:"iPhone",
+            icon:"🍎"
+        };
+    }
+
+    if(/ipad/i.test(ua)){
+
+        return {
+            name:"iPad",
+            icon:"📱"
+        };
+    }
+
+    if(/windows/i.test(ua)){
+
+        return {
+            name:"Windows PC",
+            icon:"💻"
+        };
+    }
+
+    if(/mac/i.test(ua)){
+
+        return {
+            name:"Mac",
+            icon:"🖥️"
+        };
+    }
+
+    if(/linux/i.test(ua)){
+
+        return {
+            name:"Linux",
+            icon:"🐧"
+        };
+    }
+
+    return {
+        name:"Unknown Device",
+        icon:"📡"
+    };
+}
+
+const transferZone =
+    document.getElementById("transfer-zone");
+
+transferZone.addEventListener("click", () => {
+
+    document
+    .getElementById("fileInput")
+    .click();
+});
+
+transferZone.addEventListener("dragover", e => {
+
+    e.preventDefault();
+
+    transferZone.classList.add("drag");
+});
+
+transferZone.addEventListener("dragleave", () => {
+
+    transferZone.classList.remove("drag");
+});
+
+transferZone.addEventListener("drop", e => {
+
+    e.preventDefault();
+
+    transferZone.classList.remove("drag");
+
+    handleFiles(e.dataTransfer.files);
+});
+
+document
+.getElementById("fileInput")
+.addEventListener("change", e => {
+
+    handleFiles(e.target.files);
+});
+
+function handleFiles(files){
+
+    [...files].forEach(file => {
+
+        if(!conn || !conn.open){
+
+            alert("No hay conexión activa.");
+            return;
+        }
+
+        sendFile(file);
+    });
+}
+
+function sendFile(file){
+
+    totalSent++;
+    totalSentBytes += file.size;
+
+    document.getElementById("sent-count").textContent =
+        totalSent;
+
+    document.getElementById("sent-size").textContent =
+        formatBytes(totalSentBytes);
+
+    const container =
+        document.getElementById("sent-list");
+
+    if(totalSent === 1){
+        container.innerHTML = "";
+    }
+
+    const item =
+        createFileItem({
+            name:file.name,
+            size:file.size,
+            type:file.type,
+            sending:true
+        });
+
+    container.prepend(item);
+
+    const reader =
+        new FileReader();
+
+    reader.onload = e => {
+
+        conn.send({
+            file:e.target.result,
+            filename:file.name,
+            type:file.type,
+            size:file.size
+        });
+
+        const badge =
+            item.querySelector(".badge");
+
+        badge.classList.remove("sending");
+
+        badge.classList.add("success");
+
+        badge.textContent = "Enviado";
+
+        playSound(500);
+    };
+
+    reader.readAsArrayBuffer(file);
+}
+
+function createFileItem(data){
+
+    let icon = "file";
+
+    if(data.type.startsWith("image/")) icon = "image";
+    else if(data.type.startsWith("video/")) icon = "video";
+    else if(data.type.startsWith("audio/")) icon = "music-4";
+    else if(data.type.includes("zip")) icon = "archive";
+    else if(data.type.includes("pdf")) icon = "file-text";
+
+    const item =
+        document.createElement("div");
+
+    item.className = "file-item";
+
+    item.innerHTML = `
+
+        <div class="file-left">
+
+            <div class="file-icon">
+                <i data-lucide="${icon}"></i>
+            </div>
+
+            <div style="min-width:0">
+
+                <div class="file-name">
+                    ${data.name}
+                </div>
+
+                <div class="file-meta">
+                    ${formatBytes(data.size)}
+                </div>
+
+            </div>
+
+        </div>
+
+        ${
+            data.received
+            ?
+            `
+            <a
+                href="${data.url}"
+                download="${data.name}"
+                class="download-btn"
+            >
+                <i data-lucide="download"></i>
+                Descargar
+            </a>
+            `
+            :
+            `
+            <div class="badge sending">
+                Enviando...
+            </div>
+            `
+        }
+    `;
+
+    lucide.createIcons();
+
+    return item;
+}
+
+function formatBytes(bytes){
+
+    if(bytes === 0) return "0 Bytes";
+
+    const k = 1024;
+
+    const sizes =
+        ["Bytes","KB","MB","GB"];
+
+    const i =
+        Math.floor(
+            Math.log(bytes) / Math.log(k)
+        );
+
+    return parseFloat(
+        (bytes / Math.pow(k, i)).toFixed(2)
+    ) + " " + sizes[i];
+}
+
+document
+.querySelectorAll(".tab")
+.forEach(tab => {
+
+    tab.addEventListener("click", () => {
+
+        document
+        .querySelectorAll(".tab")
+        .forEach(t => t.classList.remove("active"));
+
+        tab.classList.add("active");
+
+        const type =
+            tab.dataset.tab;
+
+        document
+        .getElementById("received-list")
+        .classList.toggle(
+            "hidden",
+            type !== "received"
+        );
+
+        document
+        .getElementById("sent-list")
+        .classList.toggle(
+            "hidden",
+            type !== "sent"
+        );
+    });
+});
+
+document
+.getElementById("searchInput")
+.addEventListener("input", e => {
+
+    const query =
+        e.target.value.toLowerCase();
+
+    document
+    .querySelectorAll(".file-item")
+    .forEach(item => {
+
+        const name =
+            item
+            .querySelector(".file-name")
+            .textContent
+            .toLowerCase();
+
+        item.style.display =
+            name.includes(query)
+            ? "flex"
+            : "none";
+    });
+});
+
+function playSound(freq){
+
+    const ctx =
+        new(window.AudioContext ||
+        window.webkitAudioContext)();
+
+    const osc =
+        ctx.createOscillator();
+
+    const gain =
+        ctx.createGain();
+
+    osc.connect(gain);
+
+    gain.connect(ctx.destination);
+
+    osc.frequency.value = freq;
+
+    gain.gain.value = 0.03;
+
+    osc.start();
+
+    setTimeout(() => {
+
+        osc.stop();
+
+    }, 120);
+}
+
+</script>
+
+</body>
+</html>
